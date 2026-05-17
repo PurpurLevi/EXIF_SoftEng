@@ -1,0 +1,13 @@
+Bitte bevor das Programm laufen machen:
+Linux:
+sudo apt update
+sudo apt install exiv2
+sudo apt install build-essential \
+pkg-config \
+libexiv2-dev \
+libexpat1-dev \
+zlib1g-dev \
+libbrotli-dev \
+libinih-dev
+cd "Pfad zum Ordner mit exiftool"
+./exiftool - Programm im Ordner laufen

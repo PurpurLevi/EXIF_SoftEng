@@ -52,47 +52,33 @@ void printExifData(
 
 //*Datenschreiben
 void setExif(
-    const string& filename,
+    Exiv2::Image& image,
     const string& key,
     const string& value
     ) {
 
-    auto image = Exiv2::ImageFactory::open(filename);
+    image.readMetadata();
 
-    if (!image) {
-        cout << "Datei konnte nicht geöffnet werden.\n";
-        return;
-    }
-
-    image->readMetadata();
-
-    Exiv2::ExifData& exifData = image->exifData();
+    Exiv2::ExifData& exifData = image.exifData();
 
     exifData[key] = value;
 
-    image->setExifData(exifData);
+    image.setExifData(exifData);
 
-    image->writeMetadata();
+    image.writeMetadata();
 
     cout << "EXIF Wert geschrieben.\n";
 }
 
 //*Datenlöschen
 void removeExif(
-    const string& filename,
+    Exiv2::Image& image,
     const string& key
     ) {
 
-    auto image = Exiv2::ImageFactory::open(filename);
+    image.readMetadata();
 
-    if (!image) {
-        cout << "Datei konnte nicht geöffnet werden.\n";
-        return;
-    }
-
-    image->readMetadata();
-
-    Exiv2::ExifData& exifData = image->exifData();
+    Exiv2::ExifData& exifData = image.exifData();
 
     auto pos = exifData.findKey(Exiv2::ExifKey(key));
 
@@ -104,20 +90,22 @@ void removeExif(
 
     exifData.erase(pos);
 
-    image->setExifData(exifData);
+    image.setExifData(exifData);
 
-    image->writeMetadata();
+    image.writeMetadata();
 
     cout << "EXIF Tag gelöscht.\n";
 }
 
 //*Datenexport
 void exportExifToFile(
-    const string& filename,
     const Exiv2::ExifData& exifData,
     const map<string, string>& exifToUser
     ){
-    ofstream file("exif_export.txt");
+    string name;
+    cout<<"Name des .txt Datei eingeben: \n";
+    getline(cin, name);
+    ofstream file(name + ".txt");
 
     if (!file.is_open()) {
         cout << "Datei konnte nicht erstellt werden.\n";
@@ -142,7 +130,7 @@ void exportExifToFile(
 
     file.close();
 
-    cout << "Export abgeschlossen: exif_export.txt\n";
+    cout << "Export abgeschlossen: "<<name<<".txt\n";
 }
 
 //!Hauptfunktion
@@ -158,7 +146,7 @@ while (true) { //*Schleife über gesamte Programm
 
     auto image = Exiv2::ImageFactory::open(filename); //*Prüfung und Öffnung von Dateien
 
-    if (!image) { //*Feler: Datei wurde nicht geöffnet
+    if (image.get() == 0) { //*Feler: Datei wurde nicht geöffnet
         cout << "Datei konnte nicht geöffnet werden.\n";
         continue;
     }
@@ -291,7 +279,7 @@ while (true) { //*Schleife über gesamte Programm
 
                 if (userToExif.find(key) != userToExif.end()) 
                 {
-                    setExif(filename, userToExif[key], value);
+                    setExif(*image, userToExif[key], value);
                     image->readMetadata();
                 }
                 else 
@@ -305,14 +293,14 @@ while (true) { //*Schleife über gesamte Programm
                 key = toLower(key);
                 if (userToExif.find(key) != userToExif.end()) 
                 {
-                    removeExif(filename, userToExif[key]);
+                    removeExif(*image, userToExif[key]);
                     image->readMetadata();
                 }
                 else 
                     cout << "Unbekannter EXIF Name.\n"; 
             }
             else if(command == "export"){
-                exportExifToFile(filename, exifData, exiftoUser);
+                exportExifToFile(exifData, exiftoUser);
             }
             else
                 cout << "Unbekannter Befehl.\n";
