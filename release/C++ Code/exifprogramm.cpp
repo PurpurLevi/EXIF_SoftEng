@@ -4,8 +4,26 @@
 #include <map>
 #include <algorithm>
 #include <fstream>
+#include <filesystem>
 
 using namespace std;
+namespace fs = std::filesystem;
+
+string createEditableCopy(const string& originalPath) {
+
+    fs::path original(originalPath);
+
+    fs::path copyPath =
+        original.stem().string() + "_kopie" + original.extension().string();
+
+    fs::copy_file(
+        original,
+        copyPath,
+        fs::copy_options::overwrite_existing
+    );
+
+    return copyPath.string();
+}
 
 //*Texabgleich
 string toLower(string text) {
@@ -15,6 +33,16 @@ string toLower(string text) {
         text.end(),
         text.begin(),
         ::tolower
+    );
+
+    return text;
+}
+
+string removeQuotes(string text) {
+
+    text.erase(
+        remove(text.begin(), text.end(), '"'),
+        text.end()
     );
 
     return text;
@@ -102,10 +130,33 @@ void exportExifToFile(
     const Exiv2::ExifData& exifData,
     const map<string, string>& exifToUser
     ){
+
     string name;
-    cout<<"Name des .txt Datei eingeben: \n";
-    getline(cin, name);
-    ofstream file(name + ".txt");
+    string format;
+
+    ofstream file;
+
+    cout << "Im welchen Format Exportieren?\n";
+    cout << "TXT / CSV\n";
+
+    getline(cin, format);
+
+    format = toLower(format);
+
+    if (format == "txt") {
+        cout << "Name des .txt Datei eingeben:\n";
+        getline(cin, name);
+        file.open(name + ".txt");
+    }
+    else if (format == "csv") {
+        cout << "Name des .csv Datei eingeben:\n";
+        getline(cin, name);
+        file.open(name + ".csv");
+    }
+    else {
+        cout << "Unbekanntes Format.\n";
+        return;
+    }
 
     if (!file.is_open()) {
         cout << "Datei konnte nicht erstellt werden.\n";
@@ -121,16 +172,20 @@ void exportExifToFile(
 
         if (exifToUser.find(key) != exifToUser.end()) {
             label = exifToUser.at(key);
-        } else {
+        }
+        else {
             label = key;
         }
 
-        file << label << " = " << value << "\n";
+        if (format == "csv")
+            file << label << ";" << value << "\n";
+        else
+            file << label << " = " << value << "\n";
     }
 
     file.close();
 
-    cout << "Export abgeschlossen: "<<name<<".txt\n";
+    cout << "Export abgeschlossen: " << name << "." << format << "\n";
 }
 
 //!Hauptfunktion
@@ -139,20 +194,35 @@ while (true) { //*Schleife über gesamte Programm
     
     string filename;
 
-    cout << "\nBilddatei Verzeichnis eingeben\n"; //*Eingabe von Bildverzeichnis
+    cout << "\nBilddatei Verzeichnis eingeben\n";
     cout << "(oder 'exit' zum Beenden):\n";
-        
+
     getline(cin, filename);
 
-    auto image = Exiv2::ImageFactory::open(filename); //*Prüfung und Öffnung von Dateien
+    filename = removeQuotes(filename);
 
-    if (image.get() == 0) { //*Feler: Datei wurde nicht geöffnet
-        cout << "Datei konnte nicht geöffnet werden.\n";
-        continue;
+    if (filename == "exit")
+        return 0;
+
+    shared_ptr<Exiv2::Image> image;
+    
+    try{
+        image = Exiv2::ImageFactory::open(filename);
     }
+    catch (const Exiv2::Error& e) {
+        cout << "Datei konnte nicht geoffnet werden (Exiv2-Fehler):\n"<< e.what() << "\n";
+        continue; // zurück zur Dateiauswahl
+    }  
+    if (image.get() == 0) {
+        cout << "Datei konnte nicht geoffnet werden.\n";
+        continue;
+    } 
+
+    // Original bleibt unangetastet
+    string backup = createEditableCopy(filename);
 
     image->readMetadata(); //*Lesen von Exif Daten
-
+    
     Exiv2::ExifData& exifData = image->exifData(); //*Speichern von Exif Daten in Buffer
 
     if (exifData.empty()) { //*Fehler: Daten wurden nicht gefunden
@@ -240,8 +310,6 @@ while (true) { //*Schleife über gesamte Programm
         {"bildid", "Exif.Photo.ImageUniqueID"}
     };
 
-    cout << "\nEXIF DATEN\n"; 
-    cout << "===================================\n";
     printExifData(exifData, exiftoUser); //*Datenausgabe
 
     //*Aktion wählen
