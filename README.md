@@ -18,3 +18,4 @@ Release V6ohneAPI:  Das Hauptdatei gteilt und das schreiben von standart Exif ta
                     wurde addiert. Und DeepL-API wird gelöscht.
 
 Release V7: Bibliotheken für MacOS in das Startprogramm integriert
+Release V8: Relative Pfad mit Bildanzeige ist implementier
