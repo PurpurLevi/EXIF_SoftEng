@@ -17,3 +17,4 @@ Release V6: DeepL-API wird hinzugefügt
 Release V6ohneAPI:  Das Hauptdatei gteilt und das schreiben von standart Exif tags möglich. Auch eine Datenvaliederung 
                     wurde addiert. Und DeepL-API wird gelöscht.
 
+Release V7: Bibliotheken für MacOS in das Startprogramm integriert
