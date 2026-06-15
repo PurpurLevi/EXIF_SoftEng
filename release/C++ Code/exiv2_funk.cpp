@@ -1,30 +1,46 @@
 #include "exiv2_funk.hpp"
+#include <iostream>
 
 void printExifData(
     const Exiv2::ExifData& exifData,
-    const map<string, string>& exifToUser
+    const std::map<std::string, std::string>& exifToUser,
+    const std::map<std::string, std::string>* translatedLabels
     ) {
-    cout << "\nEXIF DATEN\n";
-    cout << "===================================\n";
+    std::cout << "\nEXIF DATEN\n";
+    std::cout << "===================================\n";
 
     for (const auto& entry : exifData) {
 
-        string key = entry.key();
-        string value = entry.value().toString();
+        std::string key = entry.key();
+        std::string value = entry.value().toString();
 
-        if (exifToUser.find(key) != exifToUser.end()) {
+        if (translatedLabels != nullptr &&
+            translatedLabels->find(key) != translatedLabels->end()) {
 
-            cout << exifToUser.at(key)
-                 << " = "
-                 << value
-                 << "\n";
+            std::cout
+                << key
+                << " ("
+                << translatedLabels->at(key)
+                << ") = "
+                << value
+                << "\n";
+        }
+        else if (exifToUser.find(key) != exifToUser.end()) {
+
+            std::cout
+                << key
+                << " ("
+                << exifToUser.at(key)
+                << ") = "
+                << value
+                << "\n";
         }
         else {
-
-            cout << key
-                 << " = "
-                 << value
-                 << "\n";
+            std::cout
+                << key
+                << " = "
+                << value
+                << "\n";
         }
     }
 }
@@ -46,7 +62,7 @@ void setExif(
 
     image.writeMetadata();
 
-    cout << "EXIF Wert geschrieben.\n";
+    std::cout << "EXIF Wert geschrieben.\n";
 }
 
 //*Datenlöschen
@@ -63,7 +79,7 @@ void removeExif(
 
     if (pos == exifData.end()) {
 
-        cout << "Tag nicht gefunden.\n";
+        std::cout << "Tag nicht gefunden.\n";
         return;
     }
 

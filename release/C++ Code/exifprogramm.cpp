@@ -6,6 +6,7 @@
 #include "mapping.hpp"
 #include "valid.hpp"
 #include "exiv2_funk.hpp"
+#include "deepl.hpp"
 #include "valid.hpp"
 
 using namespace std;
@@ -119,8 +120,44 @@ void exportExifToFile(
     cout << "Export abgeschlossen: " << name << "." << format << "\n";
 }
 
+//!Konfiguriert DeepL API zu Programmbeginn
+void setupDeepL() {
+    cout << "\n--- DeepL API Konfiguration ---\n";
+    cout << "Möchten Sie DeepL Übersetzung aktivieren? (j/n):\n";
+    
+    string choice;
+    getline(cin, choice);
+    choice = toLower(choice);
+    
+    if (choice == "j") {
+        string apiKey;
+        cout << "DeepL API-Schlüssel eingeben:\n";
+        getline(cin, apiKey);
+        
+        setDeepLApiKey(apiKey);
+        
+        if (testDeepLConnection()) {
+            cout << "DeepL erfolgreich konfiguriert!\n";
+        }
+        else {
+            cout << "Warnung: DeepL-Verbindung fehlgeschlagen.\n";
+        }
+    }
+}
+
 //!Hauptfunktion
 int main() {
+    //* Stellt die Konsolencodierung auf UTF-8 um (Windows)
+    #ifdef _WIN32
+    system("chcp 65001 > nul");
+    #endif
+    
+    //* Aktiviert die UTF-8-Lokalisierung
+    std::locale::global(std::locale(""));
+    
+    //* DeepL Setup
+    setupDeepL();
+
     fs::path currentDir = fs::current_path();
     while (true) { //*Schleife über gesamte Programm
 
@@ -163,8 +200,16 @@ int main() {
 
         shared_ptr<Exiv2::Image> image;
         
+        cout << "Pfad: " << path << '\n';
+
+        if (!fs::exists(path))
+        {
+            cout << "Datei existiert nicht.\n";
+            continue;
+        }
+
         try{
-            image = Exiv2::ImageFactory::open(filename);
+            image = Exiv2::ImageFactory::open(path.string());
         }
         catch (const Exiv2::Error& e) {
             cout << "Datei konnte nicht geoffnet werden (Exiv2-Fehler):\n"<< e.what() << "\n";
@@ -176,7 +221,7 @@ int main() {
         } 
 
         //* Macht eine Kopie von Origilandatei
-        string backup = createEditableCopy(filename);
+        string backup = createEditableCopy(path.string());
 
         image->readMetadata(); //*Lesen von Exif Daten
         
@@ -187,19 +232,40 @@ int main() {
             continue;
         }
 
-        printExifData(exifData, exiftoUser); //*Datenausgabe
+        if (isDeepLEnabled()) {
+
+            map<string, string> translatedLabels =
+                translateExifLabelsForData(
+                    exifData,
+                    exiftoUser
+                );
+
+            printExifData(
+                exifData,
+                exiftoUser,
+                &translatedLabels
+            );
+        }
+        else {
+
+            printExifData(
+                exifData,
+                exiftoUser,
+                nullptr
+            );
+        }
 
         //*Aktion wählen
         string command;
 
         while(true){ //*Schleife über Datei bearbeitung
             cout << "\nBefehl eingeben:\n";
-            cout << "lesen / schreiben / loeschen / export / zuruck / exit\n";
+            cout << "lesen(l) / schreiben(s) / loeschen(lo) / export(ex) / zuruck(z) / exit\n";
 
             getline(cin, command);
             command = toLower(command); //Prüft eingegebenen Text auf Großbuchstaben
                 
-            if (command == "zuruck") //Gang zurück zum Datei Auswahl
+            if (command == "zuruck" or command == "z") //Gang zurück zum Datei Auswahl
                 break;
 
             if (command == "exit") //Beendet das gesamte Programm
@@ -208,10 +274,10 @@ int main() {
             //!Block zur Bearbeitung von Daten
             try { 
 
-                if (command == "lesen"){ //*Daten werden gedruckt
+                if (command == "lesen" or command == "l"){ //*Daten werden gedruckt
                     printExifData(exifData, exiftoUser);
                 }
-                else if (command == "schreiben") { //*Daten werden umgeschrieben
+                else if (command == "schreiben" or command == "s") { //*Daten werden umgeschrieben
                     string key;
                     string value;
 
@@ -242,7 +308,7 @@ int main() {
                         }
                     } 
                 }
-                else if (command == "loeschen") { //*Daten werden gelöscht
+                else if (command == "loeschen" or command == "lo") { //*Daten werden gelöscht
                     string key;
 
                     cout << "EXIF Name:\n";
@@ -256,8 +322,20 @@ int main() {
                     else 
                         cout << "Unbekannter EXIF Name.\n"; 
                 }
-                else if(command == "export"){
+                else if(command == "export" or command == "ex"){
                     exportExifToFile(exifData, exiftoUser);
+                }
+                else if(command == "uebersetzen"){
+                    //* Übersetzt EXIF-Werte und zeigt sie an (ohne zu speichern)
+                    cout << "\n";
+                    try {
+                        map<string, string> translatedLabels = translateExifLabelsForData(exifData, exiftoUser);
+                        cout << "\n--- Übersetzte EXIF-Tags ---\n";
+                        printExifData(exifData, exiftoUser, &translatedLabels);
+                    }
+                    catch (const exception& e) {
+                        cout << "Übersetzungsfehler: " << e.what() << "\n";
+                    }
                 }
                 else
                     cout << "Unbekannter Befehl.\n";

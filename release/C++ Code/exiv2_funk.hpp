@@ -10,7 +10,8 @@ using namespace std;
 
 void printExifData(
     const Exiv2::ExifData& exifData,
-    const map<string, string>& exifToUser
+    const std::map<std::string, std::string>& exifToUser,
+    const std::map<std::string, std::string>* translatedLabels = nullptr
     );
 
 void setExif(
