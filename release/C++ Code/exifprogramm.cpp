@@ -204,8 +204,35 @@ int main() {
 
         if (!fs::exists(path))
         {
-            cout << "Datei existiert nicht.\n";
-            continue;
+            vector<string> exts = {
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".tif",
+                ".tiff",
+                ".CA2"
+            };
+
+            bool found = false;
+
+            for (const auto& ext : exts)
+            {
+                fs::path testPath = path;
+                testPath += ext;
+
+                if (fs::exists(testPath))
+                {
+                    path = testPath;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                cout << "Datei existiert nicht.\n";
+                continue;
+            }
         }
 
         try{
