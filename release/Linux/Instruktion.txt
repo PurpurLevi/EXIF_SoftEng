@@ -2,6 +2,7 @@ Bitte bevor das Programm laufen machen:
 Linux:
 sudo apt update
 sudo apt install exiv2
+sudo apt install libcurl4-openssl-dev
 sudo apt install build-essential \
 pkg-config \
 libexiv2-dev \
