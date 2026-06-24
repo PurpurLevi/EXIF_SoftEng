@@ -1,23 +1,25 @@
 #include "exiv2_funk.hpp"
 #include <iostream>
 
-void printExifData(
+using namespace std;
+
+void printExifData( //*Datenanzeigen
     const Exiv2::ExifData& exifData,
-    const std::map<std::string, std::string>& exifToUser,
-    const std::map<std::string, std::string>* translatedLabels
+    const map<string, string>& exifToUser,
+    const map<string, string>* translatedLabels
     ) {
-    std::cout << "\nEXIF DATEN\n";
-    std::cout << "===================================\n";
+    cout << "\nEXIF DATEN\n";
+    cout << "===================================\n";
 
     for (const auto& entry : exifData) {
 
-        std::string key = entry.key();
-        std::string value = entry.value().toString();
+        string key = entry.key();
+        string value = entry.value().toString();
 
         if (translatedLabels != nullptr &&
             translatedLabels->find(key) != translatedLabels->end()) {
 
-            std::cout
+            cout
                 << key
                 << " ("
                 << translatedLabels->at(key)
@@ -27,7 +29,7 @@ void printExifData(
         }
         else if (exifToUser.find(key) != exifToUser.end()) {
 
-            std::cout
+            cout
                 << key
                 << " ("
                 << exifToUser.at(key)
@@ -36,7 +38,7 @@ void printExifData(
                 << "\n";
         }
         else {
-            std::cout
+            cout
                 << key
                 << " = "
                 << value
@@ -62,7 +64,7 @@ void setExif(
 
     image.writeMetadata();
 
-    std::cout << "EXIF Wert geschrieben.\n";
+    cout << "EXIF Wert geschrieben.\n";
 }
 
 //*Datenlöschen
@@ -79,7 +81,7 @@ void removeExif(
 
     if (pos == exifData.end()) {
 
-        std::cout << "Tag nicht gefunden.\n";
+        cout << "Tag nicht gefunden.\n";
         return;
     }
 

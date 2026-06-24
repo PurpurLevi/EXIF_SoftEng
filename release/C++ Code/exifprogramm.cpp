@@ -1,18 +1,17 @@
-#include <exiv2/exiv2.hpp>
+#include <exiv2/exiv2.hpp> //*Exif Bibliothek
 #include <iostream>
 #include <string>
 #include <fstream> //* Bibliothek für export
 #include <filesystem> //*Bibliothek zur Kopieerstellung
-#include "mapping.hpp"
-#include "valid.hpp"
-#include "exiv2_funk.hpp"
-#include "deepl.hpp"
-#include "valid.hpp"
+#include "mapping.hpp" //*Übersetzung durch Mapping
+#include "valid.hpp" //*Validierung
+#include "exiv2_funk.hpp" //*Exif funktionen: shreiben, lesen, löschen
+#include "deepl.hpp" //*Überstezung durch DeepL
 
 using namespace std;
-namespace fs = std::filesystem;
+namespace fs = filesystem;
 
-//*Anzeigt die Bilder in Ordner beim eingabe relativer Pfad
+//*Zeigt die Bilder in Ordner beim eingabe relativer Pfad an
 void showImages(const fs::path& currentDir)
 {
     int count = 0;
@@ -27,20 +26,20 @@ void showImages(const fs::path& currentDir)
         transform(ext.begin(), ext.end(),
                   ext.begin(), ::tolower);
 
-        if (ext == ".jpg"  ||
+        if (ext == ".jpg"  || //Unteschtüzbare Formate
             ext == ".jpeg" ||
             ext == ".png"  ||
             ext == ".tif"  ||
-            ext == ".tiff")
+            ext == ".tiff" ||
+            ext == ".CA2")
         {
             count++;
-            cout << count << ". "
-                 << entry.path().filename().string()
-                 << '\n';
+            cout << count << ". "<< entry.path().filename().string()<< '\n';
         }
     }
 }
 
+//*Erzeugt Kopie von Datei in selber Ordner
 string createEditableCopy(const string& originalPath) {
 
     fs::path original(originalPath);
@@ -57,7 +56,7 @@ string createEditableCopy(const string& originalPath) {
     return copyPath.string();
 }
 
-//*Datenexport
+//*Datenexport in TXT oder CSV
 void exportExifToFile(
     const Exiv2::ExifData& exifData,
     const map<string, string>& exifToUser
@@ -153,7 +152,7 @@ int main() {
     #endif
     
     //* Aktiviert die UTF-8-Lokalisierung
-    std::locale::global(std::locale(""));
+    locale::global(locale(""));
     
     //* DeepL Setup
     setupDeepL();
@@ -164,7 +163,7 @@ int main() {
         cout << "\nAktueller Ordner:\n";
         cout << currentDir << "\n\n";
 
-        showImages(currentDir);
+        showImages(currentDir); //*Funktion zur Bildanzeige in Ordner
 
         string filename;
 
@@ -173,7 +172,7 @@ int main() {
         
         getline(cin, filename);
 
-        filename = removeQuotes(filename);
+        filename = removeQuotes(filename); //*Löscht die Zitaten von Pfad
 
         if (filename == "exit")
             return 0;
@@ -202,7 +201,7 @@ int main() {
         
         cout << "Pfad: " << path << '\n';
 
-        if (!fs::exists(path))
+        if (!fs::exists(path)) //*Prüft und erlaubt Dateiname ohne Format einzugeben
         {
             vector<string> exts = {
                 ".jpg",
@@ -259,7 +258,7 @@ int main() {
             continue;
         }
 
-        if (isDeepLEnabled()) {
+        if (isDeepLEnabled()) { //*Wenn Deepl gewählt war: Übersetzt
 
             map<string, string> translatedLabels =
                 translateExifLabelsForData(
@@ -310,25 +309,31 @@ int main() {
 
                     cout << "EXIF Name:\n";
                     getline(cin, key);
-                    key = toLower(key);
 
-                    cout << "Neue Wert:\n";
-                    getline(cin, value);
-                    
-                    if (fieldType[key] == "date")
-                        value = normaldate(value);
+                    string lowerKey = toLower(key);
 
-                    if (userToExif.find(key) != userToExif.end()) 
-                    {
-                        setExif(*image, userToExif[key], value);
+                    if(userToExif.find(lowerKey) != userToExif.end()){ //Prüft nach Key in Map
+                        
+                        cout << "Neue Wert:\n";
+                        getline(cin, value);
+
+                        setExif(*image, userToExif[lowerKey], value);
                         image->readMetadata();
                     }
                     else{
-                        try { //*Schreibt neues Exif Key
-                            Exiv2::ExifKey exifKey(key);
+                        try { 
+                            Exiv2::ExifKey exifKey(key); //Wenn kein Key in Map, sucht nach Exifkey
+                            cout << "Neue Wert:\n";
+                            getline(cin, value);
+
+                            if (fieldType[key] == "date")
+                                value = normaldate(value);
+
+                            if (fieldType[key] == "digits")
+                                value = digits(value);
+
                             setExif(*image, key, value);
                             image->readMetadata();
-                            cout << "Neuer Tag wurde erstellt.\n";
                         }
                         catch (...) {
                             cout << "Unbekannter EXIF Name.\n";
@@ -340,29 +345,28 @@ int main() {
 
                     cout << "EXIF Name:\n";
                     getline(cin, key);
-                    key = toLower(key);
-                    if (userToExif.find(key) != userToExif.end()) 
+
+                    string lowerKey = toLower(key);
+                    
+                    if (userToExif.find(lowerKey) != userToExif.end()) 
                     {
-                        removeExif(*image, userToExif[key]);
+                        removeExif(*image, userToExif[lowerKey]);
                         image->readMetadata();
                     }
-                    else 
-                        cout << "Unbekannter EXIF Name.\n"; 
+                    else{
+                        try { 
+                            Exiv2::ExifKey exifKey(key);
+
+                            removeExif(*image, key);
+                            image->readMetadata();
+                        }
+                        catch (...) {
+                            cout << "Unbekannter EXIF Name.\n";
+                        }
+                    } 
                 }
-                else if(command == "export" or command == "ex"){
+                else if(command == "export" or command == "ex"){ //*exportiert die Daten
                     exportExifToFile(exifData, exiftoUser);
-                }
-                else if(command == "uebersetzen"){
-                    //* Übersetzt EXIF-Werte und zeigt sie an (ohne zu speichern)
-                    cout << "\n";
-                    try {
-                        map<string, string> translatedLabels = translateExifLabelsForData(exifData, exiftoUser);
-                        cout << "\n--- Übersetzte EXIF-Tags ---\n";
-                        printExifData(exifData, exiftoUser, &translatedLabels);
-                    }
-                    catch (const exception& e) {
-                        cout << "Übersetzungsfehler: " << e.what() << "\n";
-                    }
                 }
                 else
                     cout << "Unbekannter Befehl.\n";

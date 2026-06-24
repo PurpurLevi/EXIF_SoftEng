@@ -1,4 +1,4 @@
-Bitte bevor das Programm laufen machen:
+Bitte installieren bevor das Programm laufen machen:
 Linux:
 sudo apt update
 sudo apt install exiv2

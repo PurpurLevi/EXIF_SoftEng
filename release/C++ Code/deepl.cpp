@@ -3,14 +3,16 @@
 #include <nlohmann/json.hpp>
 #include <cctype>
 
+using namespace std;
+
 //* JSON Bibliothek
 using json = nlohmann::json;
 
 //* Globaler DeepL API-Schlüssel
-std::string DEEPL_API_KEY = "";
+string DEEPL_API_KEY = "";
 
 //* DeepL API URL
-std::string DEEPL_API_URL = "https://api-free.deepl.com/v1/translate";
+string DEEPL_API_URL = "https://api-free.deepl.com/v1/translate";
 
 
 //* CURL Callback-Funktion zum Speichern der Antwort
@@ -18,7 +20,7 @@ static size_t WriteCallback(
     void* contents,
     size_t size,
     size_t nmemb,
-    std::string* s
+    string* s
 ) {
     s->append(
         static_cast<char*>(contents),
@@ -30,7 +32,7 @@ static size_t WriteCallback(
 
 
 //* Speichert den DeepL API-Schlüssel
-void setDeepLApiKey(const std::string& apiKey) {
+void setDeepLApiKey(const string& apiKey) {
 
     DEEPL_API_KEY = apiKey;
 
@@ -46,17 +48,17 @@ bool isDeepLEnabled() {
 
 
 //* Übersetzt einen Text nach Deutsch
-std::string translateToGerman(const std::string& text)
+string translateToGerman(const string& text)
 {
     if (DEEPL_API_KEY.empty()) {
-        std::cerr << "Fehler: Kein DeepL API-Schlüssel vorhanden.\n";
+        cerr << "Fehler: Kein DeepL API-Schlüssel vorhanden.\n";
         return text;
     }
 
     CURL* curl = curl_easy_init();
 
     if (!curl) {
-        std::cerr << "Fehler: CURL initialization failed.\n";
+        cerr << "Fehler: CURL initialization failed.\n";
         return text;
     }
 
@@ -67,10 +69,10 @@ std::string translateToGerman(const std::string& text)
             {"target_lang", "DE"}
         };
 
-        std::string postData = requestBody.dump();
+        string postData = requestBody.dump();
 
         //* Antwort der API
-        std::string response;
+        string response;
 
         //* HTTP Header vorbereiten
         struct curl_slist* headers = nullptr;
@@ -85,7 +87,7 @@ std::string translateToGerman(const std::string& text)
             "User-Agent: exifprogramm/1.0"
         );
 
-        std::string authHeader =
+        string authHeader =
             "Authorization: DeepL-Auth-Key " + DEEPL_API_KEY;
 
         headers = curl_slist_append(
@@ -166,15 +168,15 @@ std::string translateToGerman(const std::string& text)
         curl_easy_cleanup(curl);
 
         if (res != CURLE_OK) {
-            std::cerr << "\n*** CURL Fehler ***\n";
-            std::cerr << curl_easy_strerror(res) << "\n";
+            cerr << "\n*** CURL Fehler ***\n";
+            cerr << curl_easy_strerror(res) << "\n";
             return text;
         }
 
         if (httpCode != 200) {
-            std::cerr << "\n*** API Fehler ***\n";
-            std::cerr << "HTTP Status: " << httpCode << "\n";
-            std::cerr << "Antwort: " << response << "\n";
+            cerr << "\n*** API Fehler ***\n";
+            cerr << "HTTP Status: " << httpCode << "\n";
+            cerr << "Antwort: " << response << "\n";
             return text;
         }
 
@@ -188,12 +190,12 @@ std::string translateToGerman(const std::string& text)
             return responseJson["translations"][0]["text"];
         }
 
-        std::cerr << "Fehler: Ungültige API-Antwort.\n";
+        cerr << "Fehler: Ungültige API-Antwort.\n";
         return text;
 
     }
-    catch (const std::exception& e) {
-        std::cerr << "DeepL Anfrage Fehler: " << e.what() << "\n";
+    catch (const exception& e) {
+        cerr << "DeepL Anfrage Fehler: " << e.what() << "\n";
 
         curl_easy_cleanup(curl);
 
@@ -203,19 +205,19 @@ std::string translateToGerman(const std::string& text)
 
 
 //* Wandelt EXIF-Key in lesbaren Text um
-static std::string makeReadableExifName(
-    const std::string& key
+static string makeReadableExifName(
+    const string& key
 ) {
-    std::string name = key;
+    string name = key;
 
     //* Entfernt alles vor dem letzten Punkt
     size_t pos = name.rfind('.');
 
-    if (pos != std::string::npos) {
+    if (pos != string::npos) {
         name = name.substr(pos + 1);
     }
 
-    std::string result;
+    string result;
 
     //* Fügt Leerzeichen zwischen Klein- und Großbuchstaben ein
     for (size_t i = 0; i < name.size(); ++i) {
@@ -224,8 +226,8 @@ static std::string makeReadableExifName(
 
         if (
             i > 0 &&
-            std::isupper(static_cast<unsigned char>(c)) &&
-            std::islower(static_cast<unsigned char>(name[i - 1]))
+            isupper(static_cast<unsigned char>(c)) &&
+            islower(static_cast<unsigned char>(name[i - 1]))
         ) {
             result += ' ';
         }
@@ -238,35 +240,35 @@ static std::string makeReadableExifName(
 
 
 //* Übersetzt alle EXIF-Tags der aktuellen Datei mit DeepL
-std::map<std::string, std::string> translateExifLabelsForData(
+map<string, string> translateExifLabelsForData(
     const Exiv2::ExifData& exifData,
-    const std::map<std::string, std::string>& exifToUser
+    const map<string, string>& exifToUser
 ) {
-    std::map<std::string, std::string> labels;
+    map<string, string> labels;
 
-    std::cout << "Übersetzung aller EXIF-Tags mit DeepL...\n";
+    cout << "Übersetzung aller EXIF-Tags mit DeepL...\n";
 
     for (const auto& entry : exifData) {
 
-        std::string key = entry.key();
+        string key = entry.key();
 
-        std::string readableName =
+        string readableName =
             makeReadableExifName(key);
 
         if (isDeepLEnabled()) {
 
-            std::string readableName =
+            string readableName =
                 makeReadableExifName(key);
 
-            std::cout
+            cout
                 << "[DeepL] "
                  << readableName
                 << " -> ";
 
-            std::string translated =
+            string translated =
                 translateToGerman(readableName);
 
-            std::cout << translated << "\n";
+            cout << translated << "\n";
 
             labels[key] = translated;
         }
@@ -277,30 +279,30 @@ std::map<std::string, std::string> translateExifLabelsForData(
         }
     }
 
-    std::cout << "Übersetzung aller EXIF-Tags abgeschlossen.\n";
+    cout << "Übersetzung aller EXIF-Tags abgeschlossen.\n";
 
     return labels;
 }
 
 
 //* Übersetzt EXIF-Werte
-std::map<std::string, std::string> translateExifValues(
+map<string, string> translateExifValues(
     const Exiv2::ExifData& exifData
 ) {
-    std::map<std::string, std::string> translatedValues;
+    map<string, string> translatedValues;
 
-    std::cout << "Übersetzung der EXIF-Werte in Deutsch...\n";
+    cout << "Übersetzung der EXIF-Werte in Deutsch...\n";
 
     for (const auto& entry : exifData) {
 
-        std::string key = entry.key();
-        std::string value = entry.value().toString();
+        string key = entry.key();
+        string value = entry.value().toString();
 
         if (value.empty()) {
             continue;
         }
 
-        std::string translated =
+        string translated =
             translateToGerman(value);
 
         if (translated != value) {
@@ -308,7 +310,7 @@ std::map<std::string, std::string> translateExifValues(
         }
     }
 
-    std::cout << "EXIF-Werte Übersetzung abgeschlossen.\n";
+    cout << "EXIF-Werte Übersetzung abgeschlossen.\n";
 
     return translatedValues;
 }
@@ -318,23 +320,23 @@ std::map<std::string, std::string> translateExifValues(
 bool testDeepLConnection() {
 
     if (DEEPL_API_KEY.empty()) {
-        std::cout << "Fehler: DeepL API-Schlüssel ist nicht gesetzt.\n";
+        cout << "Fehler: DeepL API-Schlüssel ist nicht gesetzt.\n";
         return false;
     }
 
-    std::string testPhrase = "Hello";
+    string testPhrase = "Hello";
 
-    std::string testResult =
+    string testResult =
         translateToGerman(testPhrase);
 
     if (
         !testResult.empty() &&
         testResult != testPhrase
     ) {
-        std::cout << "DeepL Verbindung erfolgreich!\n";
+        cout << "DeepL Verbindung erfolgreich!\n";
         return true;
     }
 
-    std::cout << "DeepL Verbindung fehlgeschlagen.\n";
+    cout << "DeepL Verbindung fehlgeschlagen.\n";
     return false;
 }
