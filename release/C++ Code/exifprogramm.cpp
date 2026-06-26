@@ -314,25 +314,32 @@ int main() {
 
                     if(userToExif.find(lowerKey) != userToExif.end()){ //Prüft nach Key in Map
                         
-                        cout << "Neue Wert:\n";
+                        lowerKey = userToExif[lowerKey];
+                        cout << "Neue Wert: ";
                         getline(cin, value);
 
-                        setExif(*image, userToExif[lowerKey], value);
+                        if (fieldType[lowerKey] == "date")
+                            value = normaldate(value);
+
+                        if (fieldType[lowerKey] == "digit")
+                            value = digits(value);
+
+                        setExif(*image, lowerKey, value);
                         image->readMetadata();
                     }
                     else{
                         try { 
                             Exiv2::ExifKey exifKey(key); //Wenn kein Key in Map, sucht nach Exifkey
-                            cout << "Neue Wert:\n";
+                            cout << "Neue Wert: ";
                             getline(cin, value);
 
                             if (fieldType[key] == "date")
                                 value = normaldate(value);
 
-                            if (fieldType[key] == "digits")
+                            if (fieldType[key] == "digit")
                                 value = digits(value);
 
-                            setExif(*image, key, value);
+                            setExif(*image, key, value); //Wandelt string Format in Exif key
                             image->readMetadata();
                         }
                         catch (...) {

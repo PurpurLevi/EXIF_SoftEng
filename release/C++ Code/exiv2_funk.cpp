@@ -53,7 +53,7 @@ void setExif(
     const string& key,
     const string& value
     ) {
-
+    
     image.readMetadata();
 
     Exiv2::ExifData& exifData = image.exifData();
