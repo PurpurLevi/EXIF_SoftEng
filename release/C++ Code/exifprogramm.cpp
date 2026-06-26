@@ -315,7 +315,7 @@ int main() {
                     if(userToExif.find(lowerKey) != userToExif.end()){ //Prüft nach Key in Map
                         
                         lowerKey = userToExif[lowerKey];
-                        cout << "Neue Wert: ";
+                        cout << "Neue Wert:\n";
                         getline(cin, value);
 
                         if (fieldType[lowerKey] == "date")
@@ -330,7 +330,7 @@ int main() {
                     else{
                         try { 
                             Exiv2::ExifKey exifKey(key); //Wenn kein Key in Map, sucht nach Exifkey
-                            cout << "Neue Wert: ";
+                            cout << "Neue Wert:\n";
                             getline(cin, value);
 
                             if (fieldType[key] == "date")
